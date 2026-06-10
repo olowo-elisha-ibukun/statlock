@@ -12,6 +12,7 @@
   },
   "keywords": [],
   "dependencies": {
+    "dotenv": "^16.3.1",
     "express": "^4.22.2"
   },
   "author": "",

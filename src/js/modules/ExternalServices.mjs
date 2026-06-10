@@ -9,7 +9,8 @@ export default class ExternalServices {
   constructor(){
     this.footballBaseUrl = 'https://v3.football.api-sports.io';
     this.basketballBaseUrl = 'https://v1.basketball.api-sports.io';
-    this.apiKey = (typeof process !== 'undefined' && process?.env?.API_SPORTS_KEY)
+    this.apiKey = (typeof process !== 'undefined' && process?.env?.API_SPORTS_API_KEY)
+      || (typeof window !== 'undefined' ? window.APP_CONFIG?.apiSportsKey : undefined)
       || (typeof import.meta !== 'undefined' ? import.meta.env?.VITE_SPORTS_API_KEY : undefined);
 
     this.cleanupStaleCache();
