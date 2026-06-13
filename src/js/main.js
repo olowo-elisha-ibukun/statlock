@@ -1,6 +1,7 @@
 import UIController from './modules/UIController.mjs';
 import ExternalServices from './modules/ExternalServices.mjs';
 import MatchDetails from './modules/MatchDetails.mjs';
+import { getCurrentLanguage } from './modules/Languages.mjs';
 
 const TEST_DATE = new Date().toISOString().slice(0,10); // YYYY-MM-DD
 

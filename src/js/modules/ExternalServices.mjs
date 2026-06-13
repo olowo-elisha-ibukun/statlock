@@ -1,226 +1,151 @@
-const CACHE_PREFIX = 'statlock_cache';
+﻿const CACHE_PREFIX = 'statlock_cache';
 const CACHE_FRESH_MS = 60 * 60 * 1000; // 1 hour freshness window
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours maximum lifespan
-const DEFAULT_HEADERS = {
-  'Content-Type': 'application/json'
-};
 
 export default class ExternalServices {
-  constructor(){
-    this.footballBaseUrl = 'https://v3.football.api-sports.io';
-    this.basketballBaseUrl = 'https://v1.basketball.api-sports.io';
-    this.apiKey = (typeof process !== 'undefined' && process?.env?.API_SPORTS_API_KEY)
-      || (typeof window !== 'undefined' ? window.APP_CONFIG?.apiSportsKey : undefined)
+  constructor() {
+    this.sportBaseUrls = {
+      football: 'https://v3.football.api-sports.io',
+      basketball: 'https://v1.basketball.api-sports.io',
+      hockey: 'https://v1.hockey.api-sports.io',
+      baseball: 'https://v1.baseball.api-sports.io',
+      volleyball: 'https://v1.volleyball.api-sports.io'
+    };
+
+    this.apiKey = this.getBrowserApiKey()
       || (typeof import.meta !== 'undefined' ? import.meta.env?.VITE_SPORTS_API_KEY : undefined);
 
     this.cleanupStaleCache();
   }
 
-  async handleResponse(response){
-    if(!response.ok){
-      throw new Error(`Request failed with status ${response.status}`);
+  getBrowserApiKey() {
+    if (typeof window === 'undefined') return undefined;
+
+    const browserKey = window.APP_CONFIG?.apiSportsKey;
+    const queryParamKey = new URLSearchParams(window.location.search).get('apiSportsKey');
+    let storedKey;
+
+    try {
+      storedKey = window.localStorage.getItem('STATLOCK_API_KEY') || undefined;
+    } catch (err) {
+      storedKey = undefined;
     }
 
-    return await response.json();
+    const key = [browserKey, queryParamKey, storedKey].find((value) => value && value !== '__API_SPORTS_KEY__');
+
+    if (queryParamKey) {
+      try {
+        window.localStorage.setItem('STATLOCK_API_KEY', queryParamKey);
+      } catch (err) {
+        console.warn('Unable to persist API key to localStorage:', err);
+      }
+    }
+
+    return key;
   }
 
-  async buildBaseUrl(sport){
-    const lower = String(sport).toLowerCase();
-
-    if(lower === 'football'){
-      return this.footballBaseUrl;
-    }
-
-    if(lower === 'basketball'){
-      return this.basketballBaseUrl;
-    }
-
-    throw new Error(`Unsupported sport: ${sport}`);
-  }
-
-  getCacheKey(sport, endpoint, params = {}){
+  getCacheKey(sport, endpoint, params = {}) {
     const normalizedSport = String(sport).trim().toLowerCase();
     const queryString = new URLSearchParams(params).toString();
     return `${CACHE_PREFIX}:${normalizedSport}:${endpoint}${queryString ? `?${queryString}` : ''}`;
   }
 
-  getCachedResponse(cacheKey){
-    if(typeof localStorage === 'undefined') return null;
+  getCachedResponse(cacheKey) {
+    if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') return null;
 
-    try{
-      const raw = localStorage.getItem(cacheKey);
-      if(!raw) return null;
+    try {
+      const raw = window.localStorage.getItem(cacheKey);
+      if (!raw) return null;
 
       const parsed = JSON.parse(raw);
-      if(parsed && typeof parsed.timestamp === 'number' && parsed.payload !== undefined){
+      if (parsed && typeof parsed.timestamp === 'number' && parsed.payload !== undefined) {
         return parsed;
       }
-    }catch(err){
+    } catch (err) {
       console.warn('ExternalServices.getCachedResponse failed:', err);
     }
 
     return null;
   }
 
-  isCacheFresh(cachedEntry){
-    if(!cachedEntry || typeof cachedEntry.timestamp !== 'number') return false;
+  isCacheFresh(cachedEntry) {
+    if (!cachedEntry || typeof cachedEntry.timestamp !== 'number') return false;
     return (Date.now() - cachedEntry.timestamp) < CACHE_FRESH_MS;
   }
 
-  saveResponseToCache(cacheKey, payload){
-    if(typeof localStorage === 'undefined') return;
+  isPayloadInvalid(payload) {
+    if (!payload || typeof payload !== 'object') return true;
+    if (payload.error || payload.errors) return true;
+    if (!Array.isArray(payload.response)
+      && !Array.isArray(payload.data)
+      && !Array.isArray(payload.results)
+      && !Array.isArray(payload.matches)
+      && !Array.isArray(payload.fixtures)) {
+      return true;
+    }
+    return false;
+  }
 
-    try{
-      localStorage.setItem(cacheKey, JSON.stringify({
+  saveResponseToCache(cacheKey, payload) {
+    if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') return;
+
+    try {
+      window.localStorage.setItem(cacheKey, JSON.stringify({
         timestamp: Date.now(),
         payload
       }));
-    }catch(err){
+    } catch (err) {
       console.warn('ExternalServices.saveResponseToCache failed:', err);
     }
   }
 
-  cleanupStaleCache(){
-    if(typeof localStorage === 'undefined') return;
+  cleanupStaleCache() {
+    if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') return;
 
-    try{
+    try {
       const keysToRemove = [];
+      for (let i = 0; i < window.localStorage.length; i += 1) {
+        const storageKey = window.localStorage.key(i);
+        if (!storageKey?.startsWith(`${CACHE_PREFIX}:`)) continue;
 
-      for(let i = 0; i < localStorage.length; i++){
-        const storageKey = localStorage.key(i);
-        if(!storageKey?.startsWith(`${CACHE_PREFIX}:`)) continue;
-
-        try{
-          const entry = JSON.parse(localStorage.getItem(storageKey));
-          if(!entry || typeof entry.timestamp !== 'number'){
-            keysToRemove.push(storageKey);
-            continue;
-          }
-
-          if((Date.now() - entry.timestamp) >= CACHE_TTL_MS){
+        try {
+          const entry = JSON.parse(window.localStorage.getItem(storageKey));
+          if (!entry || typeof entry.timestamp !== 'number' || (Date.now() - entry.timestamp) >= CACHE_TTL_MS) {
             keysToRemove.push(storageKey);
           }
-        }catch(_){
+        } catch (_err) {
           keysToRemove.push(storageKey);
         }
       }
-
-      keysToRemove.forEach((key) => localStorage.removeItem(key));
-    }catch(err){
+      keysToRemove.forEach((key) => window.localStorage.removeItem(key));
+    } catch (err) {
       console.warn('ExternalServices.cleanupStaleCache failed:', err);
     }
   }
 
-  async fetchMatchData(sport, endpoint, params = {}){
-    if(!sport || !endpoint) throw new Error('sport and endpoint are required');
-    if(!this.apiKey) throw new Error('Missing API-SPORTS key. Set VITE_SPORTS_API_KEY in your .env file.');
-
-    const cacheKey = this.getCacheKey(sport, endpoint, params);
-    const cached = this.getCachedResponse(cacheKey);
-    if(this.isCacheFresh(cached)){
-      return cached.payload;
+  async getFixtures(sport, dateString) {
+    if (!sport || !dateString) {
+      throw new Error('sport and dateString are required');
     }
 
-    const base = await this.buildBaseUrl(sport);
-    const query = new URLSearchParams(params).toString();
-    const url = `${base}/${endpoint}${query ? `?${query}` : ''}`;
+    const lowerSport = String(sport).trim().toLowerCase();
+    const proxyUrl = new URL('/api/fixtures', window.location.origin);
+    proxyUrl.searchParams.set('sport', lowerSport);
+    proxyUrl.searchParams.set('date', dateString);
 
-    const options = {
+    const response = await fetch(proxyUrl.toString(), {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'x-apisports-key': this.apiKey
+        'Content-Type': 'application/json'
       }
-    };
+    });
 
-    try{
-      const response = await fetch(url, options);
-      const payload = await this.handleResponse(response);
-      this.saveResponseToCache(cacheKey, payload);
-      return payload;
-    }catch(err){
-      console.error('ExternalServices.fetchMatchData error:', err);
-
-      if(typeof window !== 'undefined' && typeof alert === 'function'){
-        alert('Data currently unavailable. Please try again later.');
-      }
-
-      if(cached && cached.payload){
-        console.warn('Using stale cache fallback for', cacheKey);
-        return cached.payload;
-      }
-
-      throw err;
-    }
-  }
-
-  getFixtures(sport, dateString){
-    const lower = String(sport).toLowerCase();
-    const endpoint = lower === 'basketball' ? 'games' : 'fixtures';
-    return this.fetchMatchData(sport, endpoint, { date: dateString });
-  }
-
-  adaptMatchData(sport, rawMatch){
-    const lower = String(sport).toLowerCase();
-
-    if(lower === 'football'){
-      return this.adaptFootballMatch(rawMatch);
+    if (!response.ok) {
+      const payloadText = await response.text().catch(() => '');
+      const message = payloadText || response.statusText;
+      throw new Error(`Fixture proxy failed (${response.status}): ${message}`);
     }
 
-    if(lower === 'basketball'){
-      return this.adaptBasketballMatch(rawMatch);
-    }
-
-    throw new Error(`Unsupported sport: ${sport}`);
-  }
-
-  adaptFootballMatch(raw){
-    return {
-      homeTeam: raw?.teams?.home?.name ?? raw?.teamHome?.name ?? '',
-      awayTeam: raw?.teams?.away?.name ?? raw?.teamAway?.name ?? '',
-      homeScore: raw?.goals?.home ?? raw?.score?.fulltime?.home ?? null,
-      awayScore: raw?.goals?.away ?? raw?.score?.fulltime?.away ?? null
-    };
-  }
-
-  adaptBasketballMatch(raw){
-    const homeTeam = raw?.teams?.home?.name
-      ?? raw?.teamHome?.name
-      ?? raw?.team_home?.name
-      ?? raw?.home_team_name
-      ?? raw?.home?.name
-      ?? raw?.homeTeam
-      ?? '';
-
-    const awayTeam = raw?.teams?.away?.name
-      ?? raw?.teamAway?.name
-      ?? raw?.team_away?.name
-      ?? raw?.away_team_name
-      ?? raw?.away?.name
-      ?? raw?.awayTeam
-      ?? '';
-
-    const homeScore = raw?.scores?.home?.total
-      ?? raw?.scores?.home?.points
-      ?? raw?.score?.home
-      ?? raw?.home?.points
-      ?? raw?.home_points
-      ?? raw?.homeScore
-      ?? null;
-
-    const awayScore = raw?.scores?.away?.total
-      ?? raw?.scores?.away?.points
-      ?? raw?.score?.away
-      ?? raw?.away?.points
-      ?? raw?.away_points
-      ?? raw?.awayScore
-      ?? null;
-
-    return {
-      homeTeam,
-      awayTeam,
-      homeScore,
-      awayScore
-    };
+    return await response.json();
   }
 }

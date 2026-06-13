@@ -5,7 +5,7 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"node server.js\" \"vite\"",
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server.js"
@@ -16,5 +16,9 @@
     "express": "^4.22.2"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.0.1",
+    "vite": "^8.0.16"
+  }
 }

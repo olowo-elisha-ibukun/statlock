@@ -1,0 +1,100 @@
+{
+  "get": "fixtures",
+  "parameters": {
+    "date": "2026-06-12"
+  },
+  "errors": {},
+  "results": 3,
+  "response": [
+    {
+      "fixture": {
+        "id": 1001,
+        "date": "2026-06-12T12:30:00+00:00",
+        "timestamp": 1718317800,
+        "status": {
+          "long": "Match Finished",
+          "short": "FT"
+        }
+      },
+      "league": {
+        "name": "Premier League",
+        "country": "England"
+      },
+      "teams": {
+        "home": { "name": "Manchester United" },
+        "away": { "name": "Chelsea" }
+      },
+      "goals": {
+        "home": 2,
+        "away": 1
+      },
+      "odds": {
+        "home": 1.85,
+        "draw": 3.40,
+        "away": 4.10
+      },
+      "homeRecentForm": ["W", "D", "W", "W"],
+      "awayRecentForm": ["L", "W", "L", "D"]
+    },
+    {
+      "fixture": {
+        "id": 1002,
+        "date": "2026-06-12T15:00:00+00:00",
+        "timestamp": 1718326800,
+        "status": {
+          "long": "Match Finished",
+          "short": "FT"
+        }
+      },
+      "league": {
+        "name": "La Liga",
+        "country": "Spain"
+      },
+      "teams": {
+        "home": { "name": "Real Madrid" },
+        "away": { "name": "Barcelona" }
+      },
+      "goals": {
+        "home": 3,
+        "away": 2
+      },
+      "odds": {
+        "home": 2.10,
+        "draw": 3.20,
+        "away": 3.30
+      },
+      "homeRecentForm": ["W", "W", "W"],
+      "awayRecentForm": ["W", "D", "L"]
+    },
+    {
+      "fixture": {
+        "id": 1003,
+        "date": "2026-06-12T18:00:00+00:00",
+        "timestamp": 1718336400,
+        "status": {
+          "long": "Match Finished",
+          "short": "FT"
+        }
+      },
+      "league": {
+        "name": "Bundesliga",
+        "country": "Germany"
+      },
+      "teams": {
+        "home": { "name": "Bayern Munich" },
+        "away": { "name": "Borussia Dortmund" }
+      },
+      "goals": {
+        "home": 1,
+        "away": 2
+      },
+      "odds": {
+        "home": 1.90,
+        "draw": 3.50,
+        "away": 3.80
+      },
+      "homeRecentForm": ["W", "W", "D"],
+      "awayRecentForm": ["W", "W", "W"]
+    }
+  ]
+}

@@ -8,21 +8,95 @@
 </head>
 <body class="dark-theme">
   <header class="site-header">
-    <div class="brand">
-      <h1>StatLock</h1>
-      <p class="tagline">Sports analytics &amp; insights</p>
+    <div class="header-content">
+      <div class="brand">
+        <div class="statlock-logo-wrapper" style="display: flex; align-items: center; gap: 10px;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M7 10V7C7 4.23858 9.23858 2 12 2C14.7614 2 17 4.23858 17 7V10" stroke="#f3a005" stroke-width="2.5" stroke-linecap="round"/>
+            <rect x="4" y="9" width="16" height="13" rx="3" fill="#1a1a1a" stroke="#f3a005" stroke-width="2.5"/>
+            <rect x="7" y="15" width="2.5" height="4" rx="0.5" fill="#ffffff" />
+            <rect x="10.75" y="12.5" width="2.5" height="6.5" rx="0.5" fill="#ffffff" />
+            <rect x="14.5" y="11" width="2.5" height="8" rx="0.5" fill="#f3a005" />
+          </svg>
+          <span style="font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 24px; color: #ffffff; letter-spacing: -0.5px;">
+            Stat<span style="color: #f3a005;">Lock</span>
+          </span>
+        </div>
+        <p class="tagline">Sports analytics &amp; insights</p>
+      </div>
+      
+      <div class="header-controls">
+        <div class="language-selector">
+          <button class="lang-toggle" aria-label="Select language" title="Language">
+            🌐
+          </button>
+          <div class="lang-dropdown" style="display: none;">
+            <div class="lang-option" data-lang="en">
+              <span class="lang-name">English</span>
+              <span class="lang-checkmark">✓</span>
+            </div>
+            <div class="lang-option" data-lang="it">
+              <span class="lang-name">Italiano</span>
+              <span class="lang-checkmark"></span>
+            </div>
+            <div class="lang-option" data-lang="pt">
+              <span class="lang-name">Português (Brasil)</span>
+              <span class="lang-checkmark"></span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="auth-buttons">
+          <a href="#" class="auth-btn login-btn">Login</a>
+          <a href="#" class="auth-btn register-btn">Register</a>
+        </div>
+      </div>
     </div>
   </header>
 
   <main>
     <div class="controls-bar">
       <div class="sport-toggle" role="tablist" aria-label="Sport toggle">
-        <button id="toggle-football" class="active" type="button" aria-pressed="true">Football</button>
-        <button id="toggle-basketball" type="button" aria-pressed="false">Basketball</button>
+        <button id="toggle-football" data-sport="football" class="active" type="button" aria-pressed="true">Football</button>
+        <button id="toggle-basketball" data-sport="basketball" type="button" aria-pressed="false">Basketball</button>
+        <button id="toggle-hockey" data-sport="hockey" type="button" aria-pressed="false">Hockey</button>
+        
+        <button id="toggle-baseball" data-sport="baseball" type="button" aria-pressed="false">Baseball</button>
+        <button id="toggle-volleyball" data-sport="volleyball" type="button" aria-pressed="false">Volleyball</button>
+        
       </div>
 
       <div class="search-wrapper">
         <input id="global-search" type="search" placeholder="Search teams, players, matches" aria-label="Global search">
+      </div>
+    </div>
+
+    <nav class="section-nav" aria-label="Site navigation">
+      <div class="section-nav-list">
+        <button class="section-nav-tab active" data-view="summary" type="button">Summary</button>
+        <button class="section-nav-tab" data-view="matches" type="button">Matches</button>
+        <button class="section-nav-tab" data-view="filter" type="button">Match Filter</button>
+        <button class="section-nav-tab" data-view="my-selections" type="button">My Selections</button>
+        <button class="section-nav-tab" data-view="livescore" type="button">Livescore</button>
+      </div>
+    </nav>
+
+    <div class="filter-toolbar">
+      <div class="filter-toolbar-group">
+        <button class="filter-tab active" data-filter="all" type="button">All Matches</button>
+        <button class="filter-tab" data-filter="live" type="button">Live <span class="live-count">0</span></button>
+        <button class="filter-tab" data-filter="upcoming" type="button">Upcoming</button>
+      </div>
+      <div class="filter-toolbar-right">
+        <div class="filter-selector" role="button" aria-label="Select market type">
+          <span>1X2</span>
+        </div>
+        <div class="date-picker" role="group" aria-label="Date picker">
+          <button type="button" data-action="date-prev" aria-label="Previous date">&lt;</button>
+          <span class="date-display">Today</span>
+          <span class="calendar-icon">📅</span>
+          <button type="button" data-action="date-next" aria-label="Next date">&gt;</button>
+        </div>
       </div>
     </div>
 
@@ -40,6 +114,14 @@
   <footer class="site-footer">
     <small>&copy; 2026 StatLock</small>
   </footer>
+
+  <!-- Authentication Modal Overlay -->
+  <div id="auth-modal" class="auth-modal-overlay hidden">
+    <div class="auth-modal-content">
+      <button class="auth-modal-close" type="button" aria-label="Close modal">×</button>
+      <div id="modal-form-content"></div>
+    </div>
+  </div>
 
   <script>
     window.APP_CONFIG = {

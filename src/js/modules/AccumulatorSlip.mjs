@@ -43,14 +43,18 @@ export default class AccumulatorSlip {
     const matchId = match.matchId ?? match.id ?? match.match_id;
     const id = matchId != null ? String(matchId) : `generated_${Date.now()}`;
 
-    const alreadyAdded = this.items.some(item => String(item.id) === id);
-    if(alreadyAdded) return;
-
     const toStore = {
       ...match,
       id,
       matchId: id
     };
+
+    const existingIndex = this.items.findIndex(item => String(item.id) === id || String(item.matchId) === id);
+    if(existingIndex !== -1){
+      this.items[existingIndex] = toStore;
+      this.saveToLocalStorage();
+      return;
+    }
 
     this.items.push(toStore);
     this.saveToLocalStorage();
