@@ -970,10 +970,24 @@ export default class UIController {
   updateLiveCount(){
     const countElement = document.querySelector('.live-count');
     if(!countElement) return;
-    const sourceFixtures = this.currentSubView === 'livescore' && this.currentLiveFixtures.length > 0
-      ? this.currentLiveFixtures
-      : this.currentFixtures;
-    const liveCount = sourceFixtures.filter((match) => this.isLiveMatch(match)).length;
+    // Compute union of live fixtures from both sources for the current sport only
+    const sportKey = String(this.currentSport || '').toLowerCase();
+    const combinedIds = new Set();
+    const addList = (list) => {
+      (list || []).forEach((m) => {
+        try {
+          if(String(m.sport || '').toLowerCase() !== sportKey) return;
+          if(!this.isLiveMatch(m)) return;
+          const id = String(m.id || m.matchId || '').trim();
+          if(id) combinedIds.add(id);
+        } catch (err) {
+          // ignore malformed entries
+        }
+      });
+    };
+    addList(this.currentLiveFixtures || []);
+    addList(this.currentFixtures || []);
+    const liveCount = combinedIds.size;
     countElement.textContent = this.formatLiveCount(liveCount);
   }
 
@@ -2138,9 +2152,47 @@ export default class UIController {
     const lang = getCurrentLanguage();
     const livescoreTitle = t('livescore', lang);
     const noLiveMatchesText = t('noLiveMatches', lang);
-    const liveMatches = this.currentLiveFixtures.length > 0
-      ? this.currentLiveFixtures
-      : this.currentFixtures.filter((match) => this.isLiveMatch(match));
+    // Merge live fixtures from the dedicated live fetch and any live flags in the general fixtures list,
+    // but only include matches for the currently selected sport and that are truly live.
+    const sportKey = String(this.currentSport || '').toLowerCase();
+    const liveFromCurrent = (this.currentFixtures || []).filter((match) => {
+      try { return String(match.sport || '').toLowerCase() === sportKey && this.isLiveMatch(match); } catch { return false; }
+    });
+
+    const combined = [];
+    const seen = new Set();
+
+    // Add explicit live fixtures (for current sport) first
+    (this.currentLiveFixtures || []).forEach((m) => {
+      try {
+        if(String(m.sport || '').toLowerCase() !== sportKey) return;
+        if(!this.isLiveMatch(m)) return;
+        const id = String(m.id || m.matchId || '').trim();
+        if(!id) return;
+        if(!seen.has(id)){
+          seen.add(id);
+          combined.push(m);
+        }
+      } catch (err) {
+        // ignore malformed entries
+      }
+    });
+
+    // Add any other live fixtures found in the general fixtures list
+    liveFromCurrent.forEach((m) => {
+      try {
+        const id = String(m.id || m.matchId || '').trim();
+        if(!id) return;
+        if(!seen.has(id)){
+          seen.add(id);
+          combined.push(m);
+        }
+      } catch (err) {
+        // ignore
+      }
+    });
+
+    const liveMatches = combined;
     container.innerHTML = '';
 
     if(liveMatches.length === 0){

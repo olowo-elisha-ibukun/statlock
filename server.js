@@ -226,6 +226,24 @@ app.get('*', (req, res) => {
   res.type('html').send(renderedHtml);
 });
 
+// Temporary debug route to check what the server sees from the remote API
+app.get('/api/debug-remote', async (req, res) => {
+  const apiKey = getApiKey();
+  const testUrl = 'https://v3.football.api-sports.io/fixtures?date=2026-06-18';
+
+  try {
+    const { status, payload } = await fetchJson(testUrl, {
+      'Content-Type': 'application/json',
+      'x-apisports-key': apiKey
+    });
+
+    const maskedKey = apiKey ? `${apiKey.slice(0,4)}...${apiKey.slice(-4)}` : null;
+    return res.status(200).json({ usedKey: maskedKey, upstreamStatus: status, upstreamPayload: payload });
+  } catch (err) {
+    return res.status(500).json({ error: err?.message || String(err) });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`StatLock server running on port ${PORT}`);
 });
