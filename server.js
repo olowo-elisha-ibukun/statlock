@@ -96,7 +96,7 @@ const endpointMap = {
   football: ['fixtures'],
   basketball: ['games', 'fixtures', 'matches'],
   hockey: ['games', 'fixtures', 'matches'],
-  baseball: ['games', 'fixtures', 'matches'],
+  baseball: ['games'],
   volleyball: ['games', 'fixtures', 'matches']
 };
 
