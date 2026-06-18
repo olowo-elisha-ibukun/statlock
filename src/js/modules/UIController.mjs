@@ -14,6 +14,7 @@ export default class UIController {
     this.services = new ExternalServices();
     this.slip = new AccumulatorSlip();
     this.currentFixtures = [];
+    this.currentLiveFixtures = [];
     this.compareModalContainer = null;
   }
 
@@ -676,6 +677,10 @@ export default class UIController {
     });
 
     this.currentSubView = selectedView;
+    if (selectedView === 'livescore') {
+      this.loadDashboardData();
+      return;
+    }
     this.renderSubView();
   }
 
@@ -878,7 +883,13 @@ export default class UIController {
     }
 
     try{
-      const payload = await this.services.getFixtures(this.currentSport, dateString);
+      const fixtureOptions = {};
+      const shouldRequestLive = this.currentSubView === 'livescore';
+      if (shouldRequestLive) {
+        fixtureOptions.status = 'live';
+      }
+
+      const payload = await this.services.getFixtures(this.currentSport, dateString, fixtureOptions);
       const hasPayloadErrors = payload?.errors && (
         (Array.isArray(payload.errors) && payload.errors.length > 0)
         || (typeof payload.errors === 'object' && Object.keys(payload.errors).length > 0)
@@ -890,8 +901,14 @@ export default class UIController {
         throw new Error(`API error: ${apiError}`);
       }
       const fixtures = this.extractFixtureArray(payload);
+      const normalizedFixtures = fixtures.map((raw) => new MatchDetails(raw, this.currentSport).normalize());
 
-      this.currentFixtures = fixtures.map((raw) => new MatchDetails(raw, this.currentSport).normalize());
+      if (shouldRequestLive) {
+        this.currentLiveFixtures = normalizedFixtures;
+      } else {
+        this.currentFixtures = normalizedFixtures;
+      }
+
       this.updateLiveCount();
       this.renderSubView();
       this.updateDateDisplay();
@@ -953,7 +970,10 @@ export default class UIController {
   updateLiveCount(){
     const countElement = document.querySelector('.live-count');
     if(!countElement) return;
-    const liveCount = this.currentFixtures.filter((match) => this.isLiveMatch(match)).length;
+    const sourceFixtures = this.currentSubView === 'livescore' && this.currentLiveFixtures.length > 0
+      ? this.currentLiveFixtures
+      : this.currentFixtures;
+    const liveCount = sourceFixtures.filter((match) => this.isLiveMatch(match)).length;
     countElement.textContent = this.formatLiveCount(liveCount);
   }
 
@@ -2118,7 +2138,9 @@ export default class UIController {
     const lang = getCurrentLanguage();
     const livescoreTitle = t('livescore', lang);
     const noLiveMatchesText = t('noLiveMatches', lang);
-    const liveMatches = this.currentFixtures.filter((match) => this.isLiveMatch(match));
+    const liveMatches = this.currentLiveFixtures.length > 0
+      ? this.currentLiveFixtures
+      : this.currentFixtures.filter((match) => this.isLiveMatch(match));
     container.innerHTML = '';
 
     if(liveMatches.length === 0){

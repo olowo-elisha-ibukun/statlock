@@ -123,15 +123,22 @@ export default class ExternalServices {
     }
   }
 
-  async getFixtures(sport, dateString) {
-    if (!sport || !dateString) {
-      throw new Error('sport and dateString are required');
+  async getFixtures(sport, dateString, options = {}) {
+    if (!sport) {
+      throw new Error('sport is required');
     }
 
     const lowerSport = String(sport).trim().toLowerCase();
     const proxyUrl = new URL('/api/fixtures', window.location.origin);
     proxyUrl.searchParams.set('sport', lowerSport);
-    proxyUrl.searchParams.set('date', dateString);
+
+    if (options.status) {
+      proxyUrl.searchParams.set('status', String(options.status).trim().toLowerCase());
+    }
+
+    if (dateString) {
+      proxyUrl.searchParams.set('date', dateString);
+    }
 
     const response = await fetch(proxyUrl.toString(), {
       method: 'GET',

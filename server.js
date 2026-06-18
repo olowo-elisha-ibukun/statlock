@@ -48,17 +48,22 @@ async function fetchJson(url, headers = {}) {
 
     const text = await response.text();
     console.log('fetchJson got', response.status, url, text?.slice(0, 200).replace(/\n/g, ' '));
-    let payload;
-    try {
-      payload = text ? JSON.parse(text) : null;
-    } catch (err) {
-      throw new Error(`Failed to parse JSON from ${url}: ${err.message}`);
+    let payload = null;
+
+    if (text) {
+      try {
+        payload = JSON.parse(text);
+      } catch (err) {
+        console.warn('fetchJson invalid JSON for', url, err.message || err);
+        payload = { error: `Invalid JSON response from the remote API: ${err.message}` };
+      }
     }
 
     return { status: response.status, payload };
   } catch (err) {
-    console.error('fetchJson error for', url, err.code || err.message || err.name || err);
-    throw err;
+    const message = err?.message || err?.code || 'fetch failed';
+    console.error('fetchJson error for', url, message);
+    return { status: 502, payload: { error: message } };
   } finally {
     clearTimeout(timeoutId);
   }
@@ -123,10 +128,11 @@ app.use('/src', express.static(path.join(__dirname, 'src')));
 app.get('/api/fixtures', async (req, res) => {
   const sport = String(req.query.sport || '').toLowerCase();
   const date = String(req.query.date || '').trim();
+  const status = String(req.query.status || '').trim().toLowerCase();
   const apiKey = getApiKey();
 
-  if(!sport || !date){
-    return res.status(400).json({ error: 'Missing required query parameters: sport and date.' });
+  if(!sport || (!date && status !== 'live')){
+    return res.status(400).json({ error: 'Missing required query parameters: sport and date, or sport and status=live.' });
   }
 
   if(!apiKey){
@@ -162,7 +168,11 @@ app.get('/api/fixtures', async (req, res) => {
   for(const host of hosts){
     for(const endpoint of endpoints){
       const genericHost = /^(https:\/\/api-sports\.(io|com))$/i.test(host);
-      const queryString = new URLSearchParams({ date, ...(genericHost ? { sport } : {}) }).toString();
+      const queryParams = {};
+      if (date) queryParams.date = date;
+      if (status) queryParams.status = status;
+      if (genericHost) queryParams.sport = sport;
+      const queryString = new URLSearchParams(queryParams).toString();
       const url = `${host}/${endpoint}${queryString ? `?${queryString}` : ''}`;
       console.log('Proxy trying', { sport, host, endpoint, date, url });
       try{

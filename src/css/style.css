@@ -1129,6 +1129,7 @@ body.dark-theme{
   justify-content:space-between;
   align-items:center;
   gap:calc(var(--gap) * 0.5);
+  animation:slideIn 0.3s ease;
 }
 
 .slip-item-content{
@@ -1785,6 +1786,17 @@ body.modal-open {
   to{
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@keyframes slideIn{
+  from{
+    opacity: 0;
+    transform: translateY(-15px);
+  }
+  to{
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
