@@ -14,22 +14,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 function getApiKey(){
-  return process.env.API_SPORTS_KEY
-    || process.env.API_SPORTS_API_KEY
-    || process.env.VITE_SPORTS_API_KEY
-    || process.env.VITE_API_SPORTS_KEY
-    || '';
+  return process.env.VITE_SPORTS_API_KEY || '';
 }
 
-function getApiKeySource(){
-  if(process.env.API_SPORTS_KEY) return 'API_SPORTS_KEY';
-  if(process.env.API_SPORTS_API_KEY) return 'API_SPORTS_API_KEY';
-  if(process.env.VITE_SPORTS_API_KEY) return 'VITE_SPORTS_API_KEY';
-  if(process.env.VITE_API_SPORTS_KEY) return 'VITE_API_SPORTS_KEY';
-  return 'none';
-}
-
-console.log('StatLock proxy API-Sports key source:', getApiKeySource());
+console.log('StatLock proxy using VITE_SPORTS_API_KEY for API-Sports requests');
 
 async function fetchJson(url, headers = {}) {
   const target = new URL(url);
@@ -136,7 +124,7 @@ app.get('/api/fixtures', async (req, res) => {
   }
 
   if(!apiKey){
-    return res.status(500).json({ error: 'Missing API_SPORTS_KEY, API_SPORTS_API_KEY, VITE_SPORTS_API_KEY, or VITE_API_SPORTS_KEY in server environment.' });
+    return res.status(500).json({ error: 'Missing VITE_SPORTS_API_KEY in server environment.' });
   }
 
   const hosts = apiHosts[sport];
